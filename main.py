@@ -57,20 +57,26 @@ if(__name__ == '__main__'):
     while True:
         #now keep talking with the client
         #wait to accept a connection - blocking call
-        data = conn.recv(1024)
-        print(str(len(data)))
+        try: 
+            data = conn.recv(1024)
+        
+            print("data length: " + str(len(data)))
 
-        if(len(data) > 0):
-            decode = data.decode()
-            if (decode == 'quit'):
-                print("quit")
-                break
+            if(len(data) > 0):
+                decode = data.decode()
+                if (decode == 'quit'):
+                    print("quit")
+                    break
 
-            else:
-                fr, to, am = parseMessage(decode)
-                updateAccount(int(fr), int(to), int(am))
-                message = str(bank[int(fr)])
-                conn.sendall(message.encode())
+                else:
+                    fr, to, am = parseMessage(decode)
+                    updateAccount(int(fr), int(to), int(am))
+                    message = str(bank[0])
+                    print("sending: " + message)
+                    conn.sendall(message.encode())
+        except ConnectionResetError:
+            print("connection broken")
+            break
             
     s.close()
     sys.exit()
