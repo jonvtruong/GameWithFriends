@@ -35,16 +35,16 @@ if(__name__ == '__main__'):
 
     while True:
         s.sendall(message.encode())
+
+        if(message == 'quit'):
+            break
+
         data = s.recv(64)
         
         if(len(data) > 0):
             decode = data.decode()
             print("Client received: " + decode)
-
-            if(message == 'quit'):
-                break
-            else:
-                gameProtocol(decode)
+            gameProtocol(decode)
 
             message = input("Input: ")                                     
 

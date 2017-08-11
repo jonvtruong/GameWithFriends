@@ -6,10 +6,10 @@
 
 import socket, sys, socketserver, threading
  
-HOST = '192.168.1.108'   # Symbolic name, meaning all available interfaces
+HOST = ''   # Symbolic name, meaning all available interfaces
 PORT = 8888 # Arbitrary non-privileged port
 START_ACCOUNT = 1500
-bank = [0,10000]
+bank = []
 playerConn = []
 playerNames = []
 
@@ -21,41 +21,44 @@ class ManageClient(socketserver.BaseRequestHandler):
     Request handler class for server
     Instantiated for each client connection
     '''
-    # def __init__(self, conn):
-    #     super.__init__(self)
-    #     self.conn = conn
 
     def setup(self):
         print("connected to " + str(self.client_address))
-        newPlayer(self.request)
+        self.newPlayer()
 
     def handle(self):
         while True:
         #now keep talking with the client
         #wait to accept a connection - blocking call
-        try: 
-            data = conn.recv(64)
+            try: 
+                data = self.request.recv(64)
 
-            if(len(data) > 0):
-                decode = data.decode()
-                if (decode == 'quit'):
-                    print("quit")
-                    break
+                if(len(data) > 0):
+                    decode = data.decode()
+                    if (decode == 'quit'):
+                        print("quit")
+                        break
+
+                    else:
+                        self.gameProtocol(decode)
 
                 else:
-                    gameProtocol(decode)
+                    break
 
-            else:
+            except ConnectionResetError:
+                print("connection broken") 
                 break
 
-        except ConnectionResetError:
-            print("connection broken")
-            break
+    def finish(self):
+        print("closing connection with " + str(self.client_address))
+        playerConn[playerConn.index(self.request)] = False    
+        self.request.close()
+
+        if(not any(playerConn)): #if no more players connected then close server
+            print("No more players, closing server")
+            self.server.shutdown()
             
-        s.close()
-        sys.exit()
-            
-    def gameProtocol(message):
+    def gameProtocol(self, message):
         '''
         messages will be in the format: t 1 2 200 = transfer player 1 sends player 2, $200
         returns a tuple of strings
@@ -65,37 +68,37 @@ class ManageClient(socketserver.BaseRequestHandler):
 
         if(command == 't'): #transfer money t 1 2 200 = transfer player 1 sends player 2, $200
             parse = [int(i) for i in parse] #convert list of strings to int
-            updateAccount(*parse) #unpacks list into 3 arguments: from, to, amount
+            self.updateAccount(*parse) #unpacks list into 3 arguments: from, to, amount
 
         elif(command == 'n'): #new player created (message = n Name)
             playerNames.append(parse[0])
             print("name: " + parse[0])
 
-    def updateAccount(fromPlayer, toPlayer, amount):
+    def updateAccount(self, fromPlayer, toPlayer, amount):
         bank[fromPlayer] -= amount
         bank[toPlayer] += amount
-        sendFrom(fromPlayer)
-        #sendTo(fromPlayer, toPlayer, amount) 
+        self.sendFrom(fromPlayer)
+        self.sendTo(fromPlayer, toPlayer, amount) 
 
-    def sendFrom(player):
+    def sendFrom(self, player):
         message = 'a ' + str(bank[player])
         print("sending message: " + message)
-        playerConn[player].sendall(message.encode())
+        self.request.sendall(message.encode())
 
-    def sendTo(fromPlayer, toPlayer, amount):
+    def sendTo(self, fromPlayer, toPlayer, amount):
         message = 't ' + str(fromPlayer) + ' ' + str(toPlayer) + ' ' + str(amount)
         print("sending message: " + message)
         playerConn[toPlayer].sendall(message.encode())
 
-    def newPlayer(conn):
-        playerConn.append(conn)
-        playerNum = playerConn.index(conn) #playerNum is int
-        bank[playerNum]=START_ACCOUNT
+    def newPlayer(self):
+        playerConn.append(self.request)
+        playerNum = playerConn.index(self.request)
+        bank.append(START_ACCOUNT)
 
         #sends the player their player number and starting balance
 
         message = 'n ' + str(playerNum) + " " + str(bank[playerNum])
-        conn.sendall(message.encode())
+        self.request.sendall(message.encode())
         print("new player added: " + message)
 
 if(__name__ == '__main__'):
