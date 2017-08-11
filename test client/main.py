@@ -4,7 +4,7 @@ HOST = socket.gethostname()
 PORT = 8888
 player = 0
 account = 0
-playerNames = []
+
 def gameProtocol(message):
     '''
     messages will be in the format: a 200 = total account value 200
