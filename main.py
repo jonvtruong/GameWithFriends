@@ -12,6 +12,7 @@ START_ACCOUNT = 1500
 bank = []
 playerConn = []
 playerNames = []
+BUFFER_SIZE = 128
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
@@ -31,7 +32,7 @@ class ManageClient(socketserver.BaseRequestHandler):
         #now keep talking with the client
         #wait to accept a connection - blocking call
             try: 
-                data = self.request.recv(64)
+                data = self.request.recv(BUFFER_SIZE)
 
                 if(len(data) > 0):
                     decode = data.decode()
@@ -73,6 +74,16 @@ class ManageClient(socketserver.BaseRequestHandler):
         elif(command == 'n'): #new player created (message = n Name)
             playerNames.append(parse[0])
             print("name: " + parse[0])
+            self.sendNames()
+
+    def sendNames(self):
+        nameList = ' '.join(name for name in playerNames)
+       # nameList = 'p '.join(nameList)
+        print("list: " + nameList)  
+        message = 'p ' + nameList
+
+        for conn in playerConn: #send the latest name list to all players
+            conn.sendall(message.encode())
 
     def updateAccount(self, fromPlayer, toPlayer, amount):
         bank[fromPlayer] -= amount

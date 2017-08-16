@@ -22,6 +22,10 @@ def gameProtocol(message):
         account = int(*parse)
         print('account updated: ' + str(account))
     
+    elif(command == 'p'): #receive player name list
+        for name in parse:
+            print(name)
+    
 if(__name__ == '__main__'):
     # create a socket object
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -39,7 +43,7 @@ if(__name__ == '__main__'):
         if(message == 'quit'):
             break
 
-        data = s.recv(64)
+        data = s.recv(128)
         
         if(len(data) > 0):
             decode = data.decode()
