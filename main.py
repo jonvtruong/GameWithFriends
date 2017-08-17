@@ -67,25 +67,29 @@ class ManageClient(socketserver.BaseRequestHandler):
         parse = message.split(' ')
         command = parse.pop(0)
 
+        print("command received: " + message)
+
         if(command == 't'): #transfer money t 1 2 200 = transfer player 1 sends player 2, $200
             parse = [int(i) for i in parse] #convert list of strings to int
             self.updateAccount(*parse) #unpacks list into 3 arguments: from, to, amount
 
         elif(command == 'n'): #new player created (message = n Name)
             playerNames.append(parse[0])
-            print("name: " + parse[0])
+            print("name received: " + parse[0])
             self.sendNames()
 
-    def sendNames(self):
+    def sendNames(self): #sends list of names to all players
         nameList = ' '.join(name for name in playerNames)
        # nameList = 'p '.join(nameList)
-        print("list: " + nameList)  
+        print("sending list: " + nameList)  
         message = 'p ' + nameList
 
         for conn in playerConn: #send the latest name list to all players
             conn.sendall(message.encode())
 
     def updateAccount(self, fromPlayer, toPlayer, amount):
+        print("amount: " + str(amount))
+        
         bank[fromPlayer] -= amount
         bank[toPlayer] += amount
         self.sendFrom(fromPlayer)
@@ -93,12 +97,12 @@ class ManageClient(socketserver.BaseRequestHandler):
 
     def sendFrom(self, player):
         message = 'a ' + str(bank[player])
-        print("sending message: " + message)
+        print("sending FromPlayer message: " + message)
         self.request.sendall(message.encode())
 
     def sendTo(self, fromPlayer, toPlayer, amount):
         message = 't ' + str(fromPlayer) + ' ' + str(toPlayer) + ' ' + str(amount)
-        print("sending message: " + message)
+        print("sending ToPlayer message: " + message)
         playerConn[toPlayer].sendall(message.encode())
 
     def newPlayer(self):
@@ -110,7 +114,7 @@ class ManageClient(socketserver.BaseRequestHandler):
 
         message = 'n ' + str(playerNum) + " " + str(bank[playerNum])
         self.request.sendall(message.encode())
-        print("new player added: " + message)
+        print("new player added, sending: " + message)
 
 if(__name__ == '__main__'):
     server = ThreadedTCPServer((HOST, PORT), ManageClient)
