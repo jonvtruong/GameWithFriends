@@ -64,19 +64,33 @@ class ManageClient(socketserver.BaseRequestHandler):
         messages will be in the format: t 1 2 200 = transfer player 1 sends player 2, $200
         returns a tuple of strings
         '''
-        parse = message.split(' ')
+        parse = message.split(' ') #splits message into array of strings
         command = parse.pop(0)
 
         print("command received: " + message)
 
         if(command == 't'): #request transfer money t 1 2 200 = transfer player 1 sends player 2, $200
+            parse = [int(i) for i in parse] #convert list of strings to int
             # get the to player num from message
-            toPlayer = int(parse[1])
-            self.askConfirm(toPlayer, message)
+            if(parse[1] == -1): #if player is trying to pay/withdraw money to bank
+                if(parse[2] >= 0): #if paying the bank
+                    self.updateAccount(parse[0], -parse[2]) #update from player account
+                
+                else:
+                    self.askConfirm(0, message)
+
+            else: #player to player transactions
+                toPlayer = parse[1]
+                self.askConfirm(toPlayer, message)
 
         elif(command == 'y'): #confirmed transfer money y 1 2 200 = transfer player 1 sends player 2, $200
             parse = [int(i) for i in parse] #convert list of strings to int
-            self.updateAccount(*parse) #unpacks list into 3 arguments: from, to, amount
+            self.updateAccount(parse[0], -parse[2]) #update from player account
+            self.updateAccount(parse[1], parse[2]) #update to player account
+
+        elif(command == 'b'): #confirmed bank withdrawal b 2 -1 -200 = player 2 withdraws $200
+            parse = [int(i) for i in parse] #convert list of strings to int
+            self.updateAccount(parse[0], -parse[2]) #update from player account
 
         elif(command == 'n'): #new player created (message = n Name)
             playerNames.append(parse[0])
@@ -92,15 +106,11 @@ class ManageClient(socketserver.BaseRequestHandler):
         for conn in playerConn: #send the latest name list to all players
             conn.sendall(message.encode())
 
-    def updateAccount(self, fromPlayer, toPlayer, amount):
+    def updateAccount(self, player, amount):
         print("amount: " + str(amount))
         
-        bank[fromPlayer] -= amount
-        bank[toPlayer] += amount
-        self.sendAccount(fromPlayer)
-        self.sendAccount(toPlayer)
-    
-    def sendAccount(self, player):
+        bank[player] += amount
+
         message = 'a ' + str(bank[player])
         print("sending player message: " + message)
         playerConn[player].sendall(message.encode())
