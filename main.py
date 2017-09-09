@@ -69,7 +69,12 @@ class ManageClient(socketserver.BaseRequestHandler):
 
         print("command received: " + message)
 
-        if(command == 't'): #transfer money t 1 2 200 = transfer player 1 sends player 2, $200
+        if(command == 't'): #request transfer money t 1 2 200 = transfer player 1 sends player 2, $200
+            # get the to player num from message
+            toPlayer = int(parse[1])
+            self.askConfirm(toPlayer, message)
+
+        elif(command == 'y'): #confirmed transfer money y 1 2 200 = transfer player 1 sends player 2, $200
             parse = [int(i) for i in parse] #convert list of strings to int
             self.updateAccount(*parse) #unpacks list into 3 arguments: from, to, amount
 
@@ -92,18 +97,17 @@ class ManageClient(socketserver.BaseRequestHandler):
         
         bank[fromPlayer] -= amount
         bank[toPlayer] += amount
-        self.sendFrom(fromPlayer)
-        self.sendTo(fromPlayer, toPlayer, amount) 
-
-    def sendFrom(self, player):
+        self.sendAccount(fromPlayer)
+        self.sendAccount(toPlayer)
+    
+    def sendAccount(self, player):
         message = 'a ' + str(bank[player])
-        print("sending FromPlayer message: " + message)
-        self.request.sendall(message.encode())
+        print("sending player message: " + message)
+        playerConn[player].sendall(message.encode())
 
-    def sendTo(self, fromPlayer, toPlayer, amount):
-        message = 't ' + str(fromPlayer) + ' ' + str(toPlayer) + ' ' + str(amount)
-        print("sending ToPlayer message: " + message)
-        playerConn[toPlayer].sendall(message.encode())
+    def askConfirm(self, to, m):
+        print("sending ToPlayer message: " + m)
+        playerConn[to].sendall(m.encode())
 
     def newPlayer(self):
         playerConn.append(self.request)
