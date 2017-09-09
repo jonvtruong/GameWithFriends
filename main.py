@@ -7,7 +7,7 @@
 import socket, sys, socketserver, threading
  
 HOST = ''   # Symbolic name, meaning all available interfaces
-PORT = 8888 # Arbitrary non-privileged port
+PORT = 8880 # Arbitrary non-privileged port
 START_ACCOUNT = 1500
 bank = []
 playerConn = []
